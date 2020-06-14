@@ -11,9 +11,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+var portRegex = regexp.MustCompile(`:([0-9]+)$`)
 
 var osDefaultInheritEnv = map[string][]string{
 	"darwin":  {"DYLD_LIBRARY_PATH"},
@@ -55,14 +58,16 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.Root == "" {
 		h.Root = "/"
 	}
-	if h.Port == "" {
-		h.Port = "8080"
-	}
 	if h.Name == "" {
 		h.Name = "go"
 	}
 	if h.Stderr == nil {
 		h.Stderr = os.Stderr
+	}
+	if h.Header == nil {
+		h.Header = http.Header{
+			"Content-Type": []string{"text/plain"},
+		}
 	}
 
 	if len(r.TransferEncoding) > 0 && r.TransferEncoding[0] == "chunked" {
@@ -74,6 +79,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	pathInfo := r.URL.Path
 	if h.Root != "/" && strings.HasPrefix(pathInfo, h.Root) {
 		pathInfo = pathInfo[len(h.Root):]
+	}
+
+	port := "8080"
+
+	if matches := portRegex.FindStringSubmatch(r.Host); len(matches) != 0 {
+
+		port = matches[1]
+
 	}
 
 	env := []string{
@@ -88,7 +101,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"PATH_INFO=" + pathInfo,
 		"SCRIPT_NAME=" + h.Root,
 		"SCRIPT_FILENAME=" + h.Path,
-		"SERVER_PORT=" + h.Port,
+		"SERVER_PORT=" + port,
 	}
 
 	if remoteIP, remotePort, err := net.SplitHostPort(r.RemoteAddr); err == nil {
