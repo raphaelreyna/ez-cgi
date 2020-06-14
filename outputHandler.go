@@ -46,7 +46,8 @@ var EZOutputHandler OutputHandler = func(w http.ResponseWriter, r *http.Request,
 		parts := strings.SplitN(string(line), ":", 2)
 		if len(parts) < 2 {
 			// This line is not a header, add it to the head of the body and break
-			readBytes = []byte(line)
+			readBytes = line
+			readBytes = append(line, '\n', '\r')
 			break
 		}
 
