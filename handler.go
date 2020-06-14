@@ -200,7 +200,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			parts := strings.SplitN(string(line), ":", 2)
 			if len(parts) < 2 {
 				h.Logger.Printf("cgi: bogus header line: %s", string(line))
-				continue
+				break
 			}
 
 			k := strings.TrimSpace(parts[0])
