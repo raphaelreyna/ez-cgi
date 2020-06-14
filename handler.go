@@ -2,7 +2,6 @@
 package cgi
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"log"
@@ -12,7 +11,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -30,8 +28,6 @@ var osDefaultInheritEnv = map[string][]string{
 }
 
 // Handler runs an executable in a subprocess with an almost CGI environment.
-// The executable does not need to provide any headers, Handler will provide default Header values.
-// If the executable does provide header values, they will overwrite the default values in Header.
 // Currently ignored headers: "Location"
 type Handler struct {
 	Path string
@@ -50,8 +46,16 @@ type Handler struct {
 	// Header contains header values that should be used by default.
 	// If the client CGI process writes a header to its stdout thats already in Header, it will be replaced.
 	Header http.Header
-	// Don't replace header values in Header by those output by the CGI client process.
-	ReplaceHeader bool
+	// OutputHandler takes care of responding the HTTP client based on the CGI client processes output.
+	OutputHandler OutputHandler
+}
+
+func (h *Handler) logErr(format string, v ...interface{}) {
+	if h.Logger != nil {
+		h.Logger.Printf(format, v...)
+	} else {
+		log.Printf(format, v...)
+	}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -68,6 +72,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.Header = http.Header{
 			"Content-Type": []string{"text/plain"},
 		}
+	}
+	if h.OutputHandler == nil {
+		h.OutputHandler = DefaultOutputHandler
 	}
 
 	if len(r.TransferEncoding) > 0 && r.TransferEncoding[0] == "chunked" {
@@ -160,11 +167,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	internalError := func(err error) {
 		w.WriteHeader(http.StatusInternalServerError)
-		if h.Logger != nil {
-			h.Logger.Printf("CGI error: %v", err)
-		} else {
-			log.Printf("CGI error: %v", err)
-		}
+		h.logErr("CGI error: %v", err)
 	}
 
 	cmd := &exec.Cmd{
@@ -192,68 +195,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer cmd.Wait()
 	defer stdoutRead.Close()
 
-	linebody := bufio.NewReaderSize(stdoutRead, 1024)
-	statusCode := 0
+	h.OutputHandler(w, r, h, stdoutRead)
 
-	// Replace default headers with those provided by the CGI client process
-	if h.ReplaceHeader {
-		for {
-			line, tooBig, err := linebody.ReadLine()
-			if tooBig || err == io.EOF {
-				break
-			}
-			if err != nil {
-				internalError(err)
-				return
-			}
-			if len(line) == 0 {
-				break
-			}
-
-			parts := strings.SplitN(string(line), ":", 2)
-			if len(parts) < 2 {
-				h.Logger.Printf("cgi: bogus header line: %s", string(line))
-				break
-			}
-
-			k := strings.TrimSpace(parts[0])
-			v := strings.TrimSpace(parts[1])
-
-			switch {
-			case k == "Status":
-				if len(v) < 3 {
-					h.Logger.Printf("cgi: bogus status (short): %q", v)
-					return
-				}
-				code, err := strconv.Atoi(v[0:3])
-				if err != nil {
-					h.Logger.Printf("cgi: bogus status: %q", v)
-					h.Logger.Printf("cgi: line was %q", line)
-					return
-				}
-				statusCode = code
-			default:
-				h.Header.Set(k, v)
-			}
-		}
-	}
-
-	if statusCode == 0 {
-		statusCode = http.StatusOK
-	}
-
-	for k, vv := range h.Header {
-		for _, v := range vv {
-			w.Header().Add(k, v)
-		}
-	}
-	w.WriteHeader(statusCode)
-
-	_, err = io.Copy(w, linebody)
-	if err != nil {
-		h.Logger.Printf("cgi: copy error: %v", err)
-		cmd.Process.Kill()
-	}
+	// Make sure the process is good and dead before exiting
+	cmd.Process.Kill()
 }
 
 func removeLeadingDuplicates(env []string) (ret []string) {
