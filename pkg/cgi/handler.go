@@ -1,3 +1,8 @@
+// Package cgi flexibly implements the CGI as specified in RFC 3875.
+// Allows for non-CGI conforming executables to be used and provides default headers.
+// The executable set to handle the HTTP requests is always provided with the environment variables described in
+// RFC 3875 Sections 4.1.2 - 4.1.5, 4.1.7 - 4.1.9, and 4.1.12 - 4.1.17.
+// The handling of the executables standard output is handled by a user provided function.
 // A lot of this code is copied straight from the Go standard library: https://golang.org/src/net/http/cgi/host.go
 package cgi
 
