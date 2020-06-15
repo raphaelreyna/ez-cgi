@@ -5,8 +5,8 @@
 # ez-cgi
 
 An HTTP CGI server thats easy to use.
-The name ez-cgi actually applies to two things, the [CLI application](https://github.com/raphaelreyna/ez-cgi/cmd) and the [Go package](https://github.com/raphaelreyna/ez-cgi/pkg/cgi).
-This README is about the Go package, click here for the README for the [CLI application](https://github.com/raphaelreyna/ez-cgi/cmd).
+The name ez-cgi actually applies to two things, the [CLI application](https://github.com/raphaelreyna/ez-cgi/tree/master/cmd) and the [Go package](https://github.com/raphaelreyna/ez-cgi/tree/master/pkg/cgi).
+This README is about the Go package, click here for the README for the [CLI application](https://github.com/raphaelreyna/ez-cgi/tree/master/cmd).
 
 ## About
 The ez-cgi package make it easy to implement a more flexible CGI server in your Go applications.
