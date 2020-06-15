@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/raphaelreyna/ez-cgi/pkg/cgi"
 	"github.com/spf13/cobra"
 	"io"
@@ -14,6 +15,8 @@ import (
 
 var version string
 var versionFlag bool
+
+var year string
 
 var (
 	noError bool
@@ -38,7 +41,7 @@ var (
 
 var RootCmd = &cobra.Command{
 	Use:     "ez-cgi [flags]... executable [args]...",
-	Version: version,
+	Version: fmt.Sprintf(": %s\nyear: %s\nauthor: %s\n", version, year, "Raphael Reyna"),
 	Short:   "A friendly and easy to use (almost-)CGI HTTP server.",
 	Long: `Start a (almost-)CGI HTTP server.
 By default, ez-cgi sends the HTTP client the header 'Content-Type: text/plain'.
@@ -48,48 +51,62 @@ If the --replace,-r flag is set and the executable doesn't set any headers, a de
 }
 
 func SetFlags() {
-	RootCmd.Flags().BoolVarP(&versionFlag, "version", "v", false, "Version for ez-cgi.")
-
-	RootCmd.Flags().StringVarP(&port, "port", "p", "8080", "Port to bind to.")
-
-	RootCmd.Flags().BoolVarP(&noError, "quiet", "q", false,
-		`Don't show error messages.`,
+	RootCmd.Flags().BoolVarP(&versionFlag, "version", "v", false, `
+Version for ez-cgi.`,
 	)
 
-	RootCmd.Flags().StringVar(&certFile, "tls-cert", "", `Certificate file to use for HTTPS.
+	RootCmd.Flags().StringVarP(&port, "port", "p", "8080", `
+Port to bind to.`)
+
+	RootCmd.Flags().BoolVarP(&noError, "quiet", "q", false, `
+Don't show error messages.`,
+	)
+
+	RootCmd.Flags().StringVar(&certFile, "tls-cert", "", `
+Certificate file to use for HTTPS.
 Key file must also be provided using the --tls-key flag.`,
 	)
-	RootCmd.Flags().StringVar(&keyFile, "tls-key", "", `Key file to use for HTTPS.
+	RootCmd.Flags().StringVar(&keyFile, "tls-key", "", `
+Key file to use for HTTPS.
 Cert file must also be provided using the --tls-cert flag.`,
 	)
 
-	RootCmd.Flags().StringArrayVarP(&rawHeaders, "header", "H", nil, `HTTP header to send to client.
+	RootCmd.Flags().StringArrayVarP(&rawHeaders, "header", "H", nil, `
+HTTP header to send to client.
 To allow executable to override header see the --replace flag.
 Must be in the form 'KEY: VALUE'.`,
 	)
-	RootCmd.Flags().BoolVarP(&replace, "replace", "r", false, `Allow executable to replace default header values.
-See also: --cgi, -C.`)
+	RootCmd.Flags().BoolVarP(&replace, "replace", "r", false, `
+Allow executable to replace default header values.
+See also: --cgi, -C.`,
+	)
 
-	RootCmd.Flags().BoolVarP(&conformCGI, "cgi", "C", false, `Conform to the CGI standard (expect for in the handling of the 'Location' header which is ignored.)
+	RootCmd.Flags().BoolVarP(&conformCGI, "cgi", "C", false, `
+Conform to the CGI standard (expect for in the handling of the 'Location' header which is ignored.)
 This flag overrides the --replace, -r flag.`,
 	)
 
-	RootCmd.Flags().StringVarP(&shell, "shell", "s", "/usr/bin/sh", `Which shell ez-cgi should use when a shell command is passed.
+	RootCmd.Flags().StringVarP(&shell, "shell", "s", "/usr/bin/sh", `
+Which shell ez-cgi should use when a shell command is passed.
 See also: --shell-command, -S.`,
 	)
-	RootCmd.Flags().BoolVarP(&shellCommand, "shell-command", "S", false, `The argument executable will be interpreted as a shell command.
+	RootCmd.Flags().BoolVarP(&shellCommand, "shell-command", "S", false, `
+The argument executable will be interpreted as a shell command.
 The command will be passed to the shell set by the --shell, -s flag (sh by default).
 This flag is ignored if the --shell, -S flag is not set.
 See also: --shell, -S.`,
 	)
 
-	RootCmd.Flags().StringArrayVarP(&envVars, "env-var", "e", nil, `Environment variable to pass on to the executable.
+	RootCmd.Flags().StringArrayVarP(&envVars, "env-var", "e", nil, `
+Environment variable to pass on to the executable.
 Must be in the form 'KEY=VALUE'.`,
 	)
 
-	RootCmd.Flags().StringVarP(&stderr, "stderr", "E", "", `Where to redirect executable's stderr.`)
+	RootCmd.Flags().StringVarP(&stderr, "stderr", "E", "", `
+Where to redirect executable's stderr.`)
 
-	RootCmd.Flags().StringVarP(&dir, "dir", "d", "", `Working directory for the executable.
+	RootCmd.Flags().StringVarP(&dir, "dir", "d", "", `
+Working directory for the executable.
 Defaults to where ez-cgi was called.`,
 	)
 }

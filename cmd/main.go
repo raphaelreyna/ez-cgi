@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/raphaelreyna/ez-cgi/cmd/ez-cgi/cmd"
+	"github.com/raphaelreyna/ez-cgi/cmd/cmd"
 )
 
 func main() {
