@@ -16,9 +16,31 @@ import (
 // The client CGI process does not need to provide any headers, Handler will provide default Header values.
 // If the executable does provide header values, they will overwrite the default values in Header.
 // Currently ignored headers: "Location"
-type OutputHandler func(http.ResponseWriter, *http.Request, *Handler, io.Reader)
+type OutputHandler func(w http.ResponseWriter, r *http.Request,
+	h *Handler, stdoutReader io.Reader)
 
+// EZOutputHandler sends the entire output of the client process without scanning for headers.
+// Always responds with a 200 status code.
 var EZOutputHandler OutputHandler = func(w http.ResponseWriter, r *http.Request, h *Handler, stdoutRead io.Reader) {
+	for k, vv := range h.Header {
+		for _, v := range vv {
+			w.Header().Add(k, v)
+		}
+	}
+	w.WriteHeader(http.StatusOK)
+
+	linebody := bufio.NewReaderSize(stdoutRead, 1024)
+	_, err := io.Copy(w, linebody)
+	if err != nil {
+		h.logErr("cgi: copy error: %v", err)
+		return
+	}
+}
+
+// EZOutputHandlerReplacer scans the output of the client process for headers which replaces the default header values.
+// Stops scanning for headers after encountering the first non-header line.
+// The rest of the output is then sent as the response body.
+var EZOutputHandlerReplacer OutputHandler = func(w http.ResponseWriter, r *http.Request, h *Handler, stdoutRead io.Reader) {
 	internalError := func(err error) {
 		w.WriteHeader(http.StatusInternalServerError)
 		h.logErr("CGI error: %v", err)
@@ -71,7 +93,6 @@ var EZOutputHandler OutputHandler = func(w http.ResponseWriter, r *http.Request,
 			h.Header.Set(k, v)
 		}
 	}
-
 	if statusCode == 0 {
 		statusCode = http.StatusOK
 	}
