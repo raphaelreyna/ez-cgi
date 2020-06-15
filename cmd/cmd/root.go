@@ -86,7 +86,7 @@ Conform to the CGI standard (expect for in the handling of the 'Location' header
 This flag overrides the --replace, -r flag.`,
 	)
 
-	RootCmd.Flags().StringVarP(&shell, "shell", "s", "/usr/bin/sh", `
+	RootCmd.Flags().StringVarP(&shell, "shell", "s", "/bin/sh", `
 Which shell ez-cgi should use when a shell command is passed.
 See also: --shell-command, -S.`,
 	)
