@@ -1,4 +1,4 @@
-[![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/raphaelreyna/ez-cgi)]
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/raphaelreyna/ez-cgi)
 [![Go Report Card](https://goreportcard.com/badge/github.com/raphaelreyna/ez-cgi)](https://goreportcard.com/report/github.com/raphaelreyna/ez-cgi)
 [![GoDoc](https://godoc.org/github.com/spf13/pflag?status.svg)](https://godoc.org/github.com/raphaelreyna/ez-cgi)
 
