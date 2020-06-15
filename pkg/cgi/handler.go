@@ -31,6 +31,7 @@ var osDefaultInheritEnv = map[string][]string{
 // Currently ignored headers: "Location"
 type Handler struct {
 	Path string
+
 	Root string
 
 	Name string // value to use for SERVER_SOFTWARE env var

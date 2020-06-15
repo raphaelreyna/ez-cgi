@@ -1,7 +1,9 @@
 package cgi
 
 import (
+	"bytes"
 	"crypto/subtle"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +18,7 @@ func TestHandler(t *testing.T) {
 		ExpectedStatus int
 		ExpectedHeader http.Header
 		ExpectedBody   string
+		Input          string
 		OutputHandler  OutputHandler
 	}
 
@@ -63,11 +66,12 @@ func TestHandler(t *testing.T) {
 			Script:         "./requestbody.sh",
 			ExpectedStatus: http.StatusOK,
 			ExpectedBody:   "./expected_body",
+			Input:          "./expected_body",
 			OutputHandler:  EZOutputHandlerReplacer,
 		},
 	}
 
-	err := os.Chdir("./test-assets")
+	err := os.Chdir("../../test-assets")
 	if err != nil {
 		t.Fatalf("error while moving into test-assets directory: %s", err)
 	}
@@ -80,7 +84,16 @@ func TestHandler(t *testing.T) {
 				OutputHandler: tc.OutputHandler,
 			}
 
-			r := httptest.NewRequest("GET", "/", nil)
+			var body io.Reader
+			if tc.Input != "" {
+				inputBytes, err := ioutil.ReadFile(tc.Input)
+				if err != nil {
+					t.Fatalf("error while opening input file: %s", err)
+				}
+				body = bytes.NewReader(inputBytes)
+			}
+
+			r := httptest.NewRequest("GET", "/", body)
 			w := httptest.NewRecorder()
 
 			h.ServeHTTP(w, r)
@@ -114,8 +127,8 @@ func TestHandler(t *testing.T) {
 			}
 
 			bodyDiffs := subtle.ConstantTimeCompare(expectedBytes, receivedBytes)
-			if bodyDiffs != 0 {
-				t.Fatalf("wrong body - expected: %s\treceived: %s", string(expectedBytes), string(receivedBytes))
+			if bodyDiffs != 1 {
+				t.Fatalf("wrong body - expected: %v\treceived: %v", expectedBytes, receivedBytes)
 			}
 		})
 	}
